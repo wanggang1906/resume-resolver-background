@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emit.resume.dao.ResultDao">
+    <!--此表存放 解析结果 -->
+    <insert id="addResultToCvInfo">
+        insert into cv_info(rule_id,cv_name,original_name,upload_id,upload_date)
+        values(#{ruleId},#{cvName},#{originalName},#{uploadId},#{uploadDate})
+    </insert>
+
+    <insert id="addResultToCvWord">
+        insert into cv_word(cv_resolve_id,model_name,content)
+        values (#{CvResolveId},#{CvName},#{OriginalName})
+    </insert>
+    <!--存储用户输入的模块名和关键字-->
+    <insert id="addCsvKeyword">
+        insert into rule_version(user_id,version_number,model_name,model_value,rule_key_id,type)
+        values (#{userId},#{versionNumber},#{modelName},#{modelValue},#{ruleKeyId},#{type})
+    </insert>
+    <delete id="deleteRule" parameterType="java.lang.String">
+        DELETE FROM rule_version
+        WHERE
+        user_id = #{userId}
+    </delete>
+<!--    插入副表信息-->
+    <insert id="addCsvKeywordCopy">
+        insert into rule_version_copy(user_id,version_number,model_name,model_value,rule_key_id,type,date,rule_upload_count)
+        values (#{userId},#{versionNumber},#{modelName},#{modelValue},#{ruleKeyId},#{type},#{date},#{ruleUploadCount})
+    </insert>
+    <!--将结果存在次类成员变量中——选出model_value属于同一组的列-->
+    <select id="findKeyName" resultType="com.emit.resume.domain.CvKeyword">
+    SELECT
+ 	    id,
+ 	    version_number,
+	    model_name,
+	    model_value
+    FROM
+    	rule_version
+    WHERE type = "1" and user_id = #{userId} and version_number=#{versionNumber}
+    </select>
+<!--    结果同以下语句-->
+<!--        SELECT
+ 	    id,
+	    model_name,
+			model_value
+    FROM
+    	rule_version
+    WHERE type = "1"-->
+
+    <select id="findModels" resultType="java.lang.String">
+        select version_number from rule_version where user_id=#{userId} group by version_number
+    </select>
+
+    <select id="findAttKeyName" resultType="com.emit.resume.domain.CvKeyword">
+        select model_value from rule_version where type ="2" and version_number = #{versionNumber}
+    </select>
+    <!--从cv_Info中查询得到cv_resolver_id-->
+    <!--    从cv_info表中得到id值，存为cv_word表中的cv_resolve_id-->
+    <select id="findCvResolveId" resultType="com.emit.resume.domain.CvWord">
+        select id from cv_info
+    </select>
+<!--    查询rule_id存入cv_Info的成员变量中-->
+    <select id="findRuleId" resultType="com.emit.resume.domain.CvInfo">
+        select id from rule_version
+    </select>
+    <!--查询解析的结果，返回到页面——按照uuid查看其唯一的记录-->
+    <select id="findContentWord" resultType="com.emit.resume.domain.CvWord">
+        select model_name,content from cv_word where upload_id=#{uuid}
+    </select>
+
+    <select id="findBasicInfo" resultType="com.emit.resume.domain.BasicInfo">
+        select info_name,info_value from cv_basic_info where upload_id=#{uuid}
+    </select>
+
+    <select id="findAttName" resultType="com.emit.resume.domain.Attribute">
+        select attribute_name from rule_version
+    </select>
+    <!--解析模块名和解析关键字 存入数据库-->
+<!--    没用的-->
+    <insert id="addKey">
+        insert into rule_version(basicInformation,professionalSkill,jobExperience,projectExperience,eduExperience,selfEvaluate)
+        values (#{basicInformation},#{professionalSkill},#{jobExperience},#{projectExperience},#{eduExperience},#{selfEvaluate})
+
+        <!--#{}和${}的区别，#{}能防止SQL注入，${}不能，只在编译的时候发生替换}-->
+    </insert>
+
+    <insert id="addCvWord">
+        insert into cv_word(model_name,content,upload_id)
+        values (#{modelName},#{content},#{uploadId})
+
+    </insert>
+
+    <insert id="addCvWord2">
+        insert into cv_word(model_name,content,upload_id)
+        values
+        <foreach collection="list" item="group" index="index" separator=",">
+            (#{group.modelName},#{group.content},#{group.uploadId})
+        </foreach>
+
+    </insert>
+<!--    获取模块数-->
+    <select id="findModelsNumber" resultType="java.lang.Long">
+        select count(0) from (select model_name from rule_version
+
+        group by model_name,version_number,`type`
+				having version_number = #{versionNumber}
+         and `type` = '1') a
+    </select>
+<!--    规则记录最大值-->
+    <select id="getMaxCount" resultType="java.lang.Long">
+        select ifnull(max(rule_upload_count),0)+1 from rule_version_copy where user_id =  #{userId}
+    </select>
+
+
+<!--查询基本信息，输出关键字对应的模块民-->
+    <select id="findIsBasicInfo" resultType="java.lang.String">
+        select distinct model_name from rule_version where model_value=#{modelValue}
+    </select>
+<!--少一个数据-->
+    <insert id="insertHistory">
+        insert into rule_version_copy(user_id,version_number,model_name,model_value,rule_key_id,type,rule_upload_count,date)
+        SELECT user_id,version_number,model_name,model_value,rule_key_id,type,#{count},now() FROM rule_version WHERE user_id=#{userId}
+    </insert>
+    <select id="findHistoryRuleList" resultType="com.emit.resume.domain.CvKeywordCopy">
+        select version_number,date,rule_upload_count from rule_version_copy
+        WHERE user_id =#{userId}
+        GROUP BY version_number,date,rule_upload_count
+    </select>
+
+    <select id="findRuleOfVerNum" resultType="com.emit.resume.domain.CvKeywordCopy">
+        select user_id,version_number,model_name,model_value,rule_key_id,type
+        from rule_version_copy
+        WHERE version_number =#{versionNumber}
+    </select>
+    <insert id="addCvBasicInfo">
+        insert into cv_basic_info(info_name,info_value,upload_id)
+        values (#{infoName},#{infoValue},#{uploadId})
+    </insert>
+<!--    批量插入数据，写解析结果的表-->
+    <insert id="addCvBasicInfoList" parameterType="java.util.List">
+        insert into cv_basic_info(info_name,info_value,upload_id)
+        values
+        <foreach collection="list" item="group" index="index" separator=",">
+            ( #{group.infoName},#{group.infoValue},#{group.uuid2})
+        </foreach>
+    </insert>
+<!-- 拷来的-->
+<!-- item-别名，index-迭代过程，open-语句的开始,separator-语句之间的分隔符，close-结束-->
+<!--    查询简历存储信息表-->
+    <select id="findCvInfo" resultType="com.emit.resume.domain.CvInfo">
+        select T1.id,T1.original_name,T1.upload_id,T1.upload_date ,T2.info_value workYears ,T3.info_value post
+
+				from cv_info 	T1
+
+				left join cv_basic_info T2 on T1.upload_id = T2.upload_id
+				left join cv_basic_info T3 on T1.upload_id = T3.upload_id
+
+				where 1=1
+
+				and T2.info_name = '工作年限'
+				and T3.info_name = '职位'
+    </select>
+<!--mybatsic连接查询，查询内部传递参数用column，之后用#{}，-->
+    <select id="findCvInfoMap" resultMap="cvAbstractMap">
+        select DISTINCT T1.id,T1.original_name,T1.upload_id,T1.upload_date
+        from cv_info T1 left join cv_basic_info T2 on T1.upload_id=T2.upload_id
+        where 1=1
+        <if test="type != null and type !='' and value !=null and value != ''" >
+            and (T2.info_name = #{type} and T2.info_value LIKE CONCAT(CONCAT('%', #{value}),'%'))
+        </if>
+        order by T1.id desc
+    </select>
+    <resultMap id="cvAbstractMap" type="com.emit.resume.domain.CvInfo">
+        <result property="originalName" column="original_name"/>
+        <result property="uploadId" column="upload_id"/>
+        <result property="uploadDate" column="upload_date"/>
+        <collection property="baseInfo" column="upload_id=upload_id" select = "findAbstractOfBasicInfo"></collection>
+    </resultMap>
+    <select id="findAbstractOfBasicInfo" resultType="com.emit.resume.domain.BasicInfo">
+        select info_name,info_value from cv_basic_info
+        where (info_name= '工作年限' or info_name = '职位') and upload_id = #{upload_id}
+
+    </select>
+
+    <insert id="addRuleJson">
+        insert into rule_json(user_id,rule_json,rule_upload_count,date,version_number)
+        values (#{userId},#{jsonDate},#{count},now(),#{versionNumber})
+    </insert>
+
+    <select id="findRuleJsonOfVerNum" resultType="java.lang.String">
+        select rule_json,rule_upload_count,date from rule_json WHERE version_number = #{versionNumber}
+    </select>
+
+    <select id="findNearestRuleToRuleJson" resultType="java.lang.String">
+        select rule_json,rule_upload_count from rule_json
+        where id=(select max(id) from rule_json)
+        and user_id = #{userId}
+    </select>
+<!--按关键字检索-->
+    <select id="findCvOfSearchKey" resultType="com.emit.resume.domain.BasicInfo">
+        select T1.info_name,T1.info_value,T1.upload_id
+        from cv_basic_info T1
+        where info_name = #{searchKey}
+    </select>
+    <select id="find">
+        select original_name,upload_date from cv_info
+    </select>
+
+
+
+
+
+
+
+
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

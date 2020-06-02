@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emit.resume.dao.MenuDao">
+    <resultMap id="BaseResultMap" type="com.emit.resume.domain.Menu">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <id column="parent_id" jdbcType="BIGINT" property="parentId"/>
+        <id column="name" jdbcType="VARCHAR" property="name"/>
+        <id column="type" jdbcType="VARCHAR" property="type"/>
+        <id column="url" jdbcType="VARCHAR" property="url"/>
+        <id column="order" jdbcType="BIGINT" property="order"/>
+        <id column="icon" jdbcType="BIGINT" property="icon"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,`name`,`type`,parent_id,url,`order`,icon
+    </sql>
+
+    <select id="findAllMenus" resultType="com.emit.resume.domain.Menu">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM menu
+        ORDER BY `order` ASC
+    </select>
+
+    <select id="findMenus" resultType="com.emit.resume.domain.Menu">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM menu
+        WHERE 1=1
+
+        <if test="name != null and name !=''">
+            and `name` LIKE CONCAT(CONCAT('%', #{name}),'%')
+        </if>
+
+        <if test="parentId != null and parentId !=''">
+            and parent_id = #{parentId}
+        </if>
+    </select>
+
+    <select id="findMenuOptions" resultType="com.emit.resume.domain.Menu">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM menu
+        ORDER BY `type` ASC
+    </select>
+
+    <insert id="addMenu" parameterType="com.emit.resume.domain.Menu">
+		INSERT INTO menu(
+			`name`,
+			`type`,
+			parent_id,
+			url,
+			`order`,
+			icon
+		) VALUES (
+			#{name},
+			#{type},
+			#{parentId},
+			#{url},
+			#{order},
+			#{icon}
+		)
+	</insert>
+
+    <update id="updMenu" parameterType="com.emit.resume.domain.Menu">
+        UPDATE menu
+        <set>
+            <if test="id!=null and id!=''">id=#{id},</if>
+            <if test="name!=null and name!=''">`name`=#{name},</if>
+            <if test="type!=null and type!=''">`type`=#{type},</if>
+            <if test="parentId!=null and parentId!=''">parent_id=#{parentId},</if>
+            <if test="url!=null and url!=''">url=#{url},</if>
+            <if test="order!=null and order!=''">`order`=#{order},</if>
+            <if test="icon!=null">icon=#{icon}</if>
+        </set>
+        WHERE id=#{id}
+    </update>
+
+    <select id="checkExistMenu" parameterType="com.emit.resume.domain.Menu" resultType="com.emit.resume.domain.Menu">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM menu
+        WHERE id!=#{id}
+        AND parent_id=#{parentId}
+        AND `name`=#{name}
+    </select>
+
+    <delete id="delMenu" parameterType="java.lang.Long">
+		delete from menu
+		where
+		id = #{id}
+	</delete>
+
+    <update id="updIcon" parameterType="com.emit.resume.domain.Menu">
+        UPDATE menu
+        <set>
+            <if test="id!=null and id!=''">id=#{id},</if>
+            <if test="icon!=null">icon=#{icon}</if>
+        </set>
+        WHERE id=#{id}
+    </update>
+    <select id="findMenusByMenuIds" parameterType="java.util.List" resultType="com.emit.resume.domain.Menu">
+        select
+        <include refid="Base_Column_List"/>
+        from menu
+        where id in
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        order by `order` asc
+    </select>
+<!--自己加的-->
+    <select id="findUserMenusByUserId">
+    select id,name,icon,type,parentId,url,order
+    from menu
+    where id = #{Id}
+    </select>
+</mapper>

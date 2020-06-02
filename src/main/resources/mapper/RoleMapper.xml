@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emit.resume.dao.RoleDao">
+
+    <sql id="Base_Column_List">
+        id,`name`,resource_ids,`key`,menu_ids
+    </sql>
+
+    <select id="findAllRoles" resultType="com.emit.resume.domain.Role">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM role
+
+        WHERE 1=1
+
+        ORDER BY `id` ASC
+    </select>
+
+    <select id="findRoles" parameterType="java.lang.String" resultType="com.emit.resume.domain.Role">
+        SELECT
+            <include refid="Base_Column_List"/>
+        FROM role
+
+        WHERE 1=1
+        <if test="name != null" >
+            and `name` LIKE CONCAT(CONCAT('%', #{name}),'%')
+        </if>
+
+        ORDER BY `id` ASC
+    </select>
+
+    <insert id="addRole" parameterType="com.emit.resume.domain.Role">
+        INSERT INTO role(
+            id,
+            `name`,
+            `key`,
+            resource_ids,
+            menu_ids
+        )VALUES (
+            #{id},
+            #{name},
+            #{key},
+            #{resourceIds},
+            #{menuIds}
+        )
+    </insert>
+
+    <update id="updRole" parameterType="com.emit.resume.domain.Role">
+        UPDATE role
+        <set>
+            <if test="name!=null and name!=''">`name`=#{name},</if>
+            <if test="key!=null and key!=''">`key`=#{key},</if>
+            <if test="resourceIds!=null and resourceIds!=''">resource_ids=#{resourceIds},</if>
+            <if test="menuIds!=null and menuIds!=''">menu_ids=#{menuIds},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delRole" parameterType="java.lang.Long">
+        DELETE FROM role
+        WHERE
+        id = #{id}
+    </delete>
+
+    <select id="findRoleById" parameterType="java.lang.Long" resultType="com.emit.resume.domain.Role">
+        select id,`name`,menu_ids,`key`
+        from role
+        where id=#{id}
+    </select>
+    <select id="findRolesByRoleIds" parameterType="java.util.List" resultType="com.emit.resume.domain.Role">
+        select id,`name`,menu_ids,`key`
+        from role
+        where id in
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>
