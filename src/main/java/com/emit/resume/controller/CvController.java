@@ -306,7 +306,7 @@ public class CvController {
         return new ResultView<>(resultStr);
     }
 
-    //显示最新规则
+    //显示最新规则，刷新页面时被请求
     @ResponseBody
     @RequestMapping(value = "/initializeRulePackage")
     public ResultView refreshRulePackage(){
